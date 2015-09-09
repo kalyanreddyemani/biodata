@@ -54,6 +54,18 @@ import static org.opencb.biodata.models.variant.avro.VariantType.*;
  *
  */
 public class VariantContextToVariantConverter {
+
+	private String studyID;
+	private String filedID;
+
+
+	public VariantContextToVariantConverter(){
+
+	}
+	public VariantContextToVariantConverter(String studyID,String fieldID) {
+		this.studyID=studyID;
+		this.filedID=fieldID;
+	}
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -106,20 +118,13 @@ public class VariantContextToVariantConverter {
 				/*
 				 * set alternate parameter
 				 */
-				String[] alternateAllelArray = variantContext
-						.getAlternateAlleles().toString().split(",");
+				String alternateAllelString =variantContext	.getAlternateAlleles().toString().substring(1, variantContext.getAlternateAlleles().toString().length() - 1);
+				String[] alternateAllelArray = alternateAllelString.split(",");
 				String alternate = null;
 				if (alternateAllelArray.length >= 2) {
-					alternate = getAlternateAllele(variantContext
-							.getAlternateAlleles().toString());
+					alternate = getAlternateAllele(alternateAllelString);
 				} else {
-					alternate = variantContext
-							.getAlternateAlleles()
-							.toString()
-							.substring(
-									1,
-									variantContext.getAlternateAlleles()
-											.toString().length() - 1);
+					alternate = alternateAllelString;
 				}
 				variant.setAlternate(alternate);
 				/*
@@ -160,20 +165,14 @@ public class VariantContextToVariantConverter {
 				/*
 				 * set secondary alternate
 				 */
-				List<CharSequence> alternateAllelList = new ArrayList<CharSequence>();
-				if (variantContext
-						.getAlleles()
-						.toString()
-						.substring(
-								1,
-								variantContext.getAlleles().toString().length() - 1)
-						.split(",").length >= 3) {
-					alternateAllelList = getSecondaryAlternateAllele(variantContext
-							.getAlleles().toString());
+				List<CharSequence> secondaryAlternateAlleleList = new ArrayList<CharSequence>();
+				if (alternateAllelString.split(",").length >= 2) {
+					secondaryAlternateAlleleList = getSecondaryAlternateAllele(alternateAllelString);
+
 				} else {
-					alternateAllelList.add("null");
+					secondaryAlternateAlleleList.add("null");
 				}
-				variantSourceEntry.setSecondaryAlternates(alternateAllelList);
+				variantSourceEntry.setSecondaryAlternates(secondaryAlternateAlleleList);
 				/*
 				 * set variant format
 				 */
@@ -208,8 +207,8 @@ public class VariantContextToVariantConverter {
 				Map<CharSequence, VariantStats> cohortStats = new HashMap<CharSequence, VariantStats>();
 				cohortStats.put(
 						"2",
-						setVariantStatsParam(
-								setVariantHardyWeinbergStatsParam(),
+						setVariantStatsParams(
+								setVariantHardyWeinbergStatsParams(),
 								variantContext));
 				variantSourceEntry.setCohortStats(cohortStats);
 				/*
@@ -462,54 +461,49 @@ public class VariantContextToVariantConverter {
 
 	/**
 	 * method to get alternate allele
-	 * @return secondaryAlleleString
+	 * @return alternateAlleleString
 	 */
-	public static String getAlternateAllele(String secondaryAllel) {
+	public static String getAlternateAllele(String alternateAllele) {
+		//System.out.print("insdie method " + alternateAllele);
+
 
 		StringBuffer secondaryAllelString = new StringBuffer();
-		String secondaryAllelArrayTemp[] = secondaryAllel.trim()
-				.substring(1, secondaryAllel.trim().length() - 1).split(",");
+		String secondaryAllelArrayTemp[] = alternateAllele.trim().split(",");
 		if (secondaryAllelArrayTemp.length > 1) {
 			for (int i = 0; i < secondaryAllelArrayTemp.length; i++) {
 				if (i == 0) {
-					continue;
-				} else if (i == 1) {
 					secondaryAllelString.append(secondaryAllelArrayTemp[i]
-							.toString());
+							.toString().trim());
+					break;
+
 				}
 			}
 		}
-		return secondaryAllelString.substring(0,
-				secondaryAllelString.length() - 1);
+		//System.out.println(secondaryAllelString.toString());
+		return secondaryAllelString.toString().trim();
 	}
 
 	/**
 	 * method to get secondary allele
-	 * @param secondaryAllel
+	 * @param secondaryAllele
 	 * @return secondaryAllelArrayList
 	 */
 	public static List<CharSequence> getSecondaryAlternateAllele(
-			String secondaryAllel) {
+			String secondaryAllele) {
 
 		CharSequence secondaryAllelArray[] = null;
-		// CharSequence secondaryAllelElement = null;
-		StringBuffer secondaryAllelString = new StringBuffer();
-		CharSequence secondaryAllelArrayTemp[] = secondaryAllel.trim()
-				.substring(1, secondaryAllel.trim().length() - 1).split(",");
-		if (secondaryAllelArrayTemp.length >= 3) {
-			for (int i = 2; i < secondaryAllelArrayTemp.length; i++) {
-				if (i == 0 || i == 1) {
-					secondaryAllelString.append("null,");
-					break;
-				} else {
-					secondaryAllelString.append(secondaryAllelArrayTemp[i]
-							.toString());
-					secondaryAllelString.append(",");
+		StringBuffer secondaryAlleleString = new StringBuffer();
+		CharSequence secondaryAlleleArrayTemp[] = secondaryAllele.trim().split(",");
+		if (secondaryAlleleArrayTemp.length >= 2) {
+			for (int i = 1; i < secondaryAlleleArrayTemp.length; i++) {
+					secondaryAlleleString.append(secondaryAlleleArrayTemp[i]
+							.toString().trim());
+					secondaryAlleleString.append(",");
 				}
 			}
-			secondaryAllelArray = secondaryAllelString.substring(0,
-					secondaryAllelString.length() - 1).split(",");
-		}
+			secondaryAllelArray = secondaryAlleleString.substring(0,
+					secondaryAlleleString.length() - 1).split(",");
+
 		return Arrays.asList(secondaryAllelArray);
 	}
 
@@ -519,7 +513,7 @@ public class VariantContextToVariantConverter {
 	 * @param variantContext
 	 * @return variantStats
 	 */
-	private VariantStats setVariantStatsParam(
+	private VariantStats setVariantStatsParams(
 			VariantHardyWeinbergStats variantHardyWeinbergStats,
 			VariantContext variantContext) {
 
@@ -556,7 +550,7 @@ public class VariantContextToVariantConverter {
 	 * method to set VariantHardyWeinberg Stats Parameters
 	 * @return variantHardyWeinbergStats
 	 */
-	private VariantHardyWeinbergStats setVariantHardyWeinbergStatsParam() {
+	private VariantHardyWeinbergStats setVariantHardyWeinbergStatsParams() {
 		VariantHardyWeinbergStats variantHardyWeinbergStats = new VariantHardyWeinbergStats();
 		variantHardyWeinbergStats.setChi2(1f);
 		variantHardyWeinbergStats.setEAa00(2f);
