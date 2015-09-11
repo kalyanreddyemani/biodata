@@ -68,7 +68,6 @@ public class VariantContextToVariantConverterTest extends TestCase {
     }
 
     public void testGetSecondaryAlternateAllele() throws Exception {
-
         List<CharSequence> expectedAlternateAlleleList=new ArrayList<>();
         expectedAlternateAlleleList.add("b");
         expectedAlternateAlleleList.add("c");
