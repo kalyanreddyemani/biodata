@@ -22,9 +22,9 @@ public class VariantContextToVariantConverterTest extends TestCase {
         stringValue1="a:b:c:d:e";
         stringValue2="1:2:3:4:5";
         AlternateAllel="a,b,c,d ";
-        vcffilepath="/home/kalyanreddyemani/vcfInput/example.vcf.gz";
-        tbiFilePath="/home/kalyanreddyemani/vcfInput/example.vcf.gz.tbi";
-        avroOutPutFilePath= "/home/kalyanreddyemani/VCFOutput/vcf_out_2808.avro";
+        vcffilepath="/home/vcfInput/example.vcf.gz";
+        tbiFilePath="/home/vcfInput/example.vcf.gz.tbi";
+        avroOutPutFilePath= "/home/VCFOutput/vcf_out_2808.avro";
 
 
 
