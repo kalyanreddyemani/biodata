@@ -1,8 +1,6 @@
 package org.opencb.biodata.models.variant.avro;
 
 import junit.framework.TestCase;
-
-
 import java.util.*;
 
 /**
@@ -25,13 +23,9 @@ public class VariantContextToVariantConverterTest extends TestCase {
         vcffilepath="/home/vcfInput/example.vcf.gz";
         tbiFilePath="/home/vcfInput/example.vcf.gz.tbi";
         avroOutPutFilePath= "/home/VCFOutput/vcf_out_2808.avro";
-
-
-
     }
 
     public void tearDown() throws Exception {
-
     }
 
     public void testReadVCFFile() throws Exception {
@@ -55,18 +49,12 @@ public class VariantContextToVariantConverterTest extends TestCase {
             assertEquals(value.getValue(), actualValue);
         }
     }
-
-
-
     public void testGetAlternateAllele() throws Exception {
-
         CharSequence expectedAlternateAllele="a";
         CharSequence actualAlternateAllele = VariantContextToVariantConverter.getAlternateAllele(AlternateAllel);
         System.out.println("actualAlternateAllele" + actualAlternateAllele);
         assertEquals(expectedAlternateAllele, actualAlternateAllele);
-
     }
-
     public void testGetSecondaryAlternateAllele() throws Exception {
         List<CharSequence> expectedAlternateAlleleList=new ArrayList<>();
         expectedAlternateAlleleList.add("b");
@@ -76,18 +64,12 @@ public class VariantContextToVariantConverterTest extends TestCase {
         actualAlternateAllele=VariantContextToVariantConverter.getSecondaryAlternateAllele(AlternateAllel);
         assertEquals(expectedAlternateAlleleList.size(), actualAlternateAllele.size());
         assertEquals(new HashSet(expectedAlternateAlleleList), new HashSet(actualAlternateAllele));
-
-
     }
-
      public void testGetEnumFromString() throws Exception {
         VariantType actualVariantType;
         actualVariantType=VariantContextToVariantConverter.getEnumFromString(
                 org.opencb.biodata.models.variant.avro.VariantType.class, "SNP");
         assertTrue(actualVariantType instanceof VariantType);
-
-
     }
-
 
 }
