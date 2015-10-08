@@ -42,6 +42,36 @@ public class Variant {
         impl = avro;
     }
 
+    /**
+     *
+     * @param variantString
+     */
+    public Variant(String variantString) {
+        impl = new VariantAvro();
+        if (variantString != null && !variantString.isEmpty()) {
+            String[] fields = variantString.split(":", -1);
+            if (fields.length == 3) {
+                impl.setChromosome(fields[0]);
+                impl.setStart(Integer.parseInt(fields[1]));
+                impl.setReference("");
+                impl.setAlternate(fields[2]);
+            } else {
+                if (fields.length == 4) {
+                    impl.setChromosome(fields[0]);
+                    impl.setStart(Integer.parseInt(fields[1]));
+                    impl.setReference(fields[2]);
+                    impl.setAlternate(fields[3]);
+                } else {
+                    throw new IllegalArgumentException("Variant needs 3 or 4 fields separated by ':'");
+                }
+            }
+        }
+    }
+
+    public Variant(String chromosome, int position, String reference, String alternate) {
+        this(chromosome, position, position, reference, alternate, "+");
+    }
+
     public Variant(String chromosome, int start, int end, String reference, String alternate) {
         this(chromosome, start, end, reference, alternate, "+");
     }
@@ -65,12 +95,7 @@ public class Variant {
 
         this.resetLength();
         this.resetType();
-
-        if (this.getType() == VariantType.SNV) { // Generate HGVS code only for SNVs
-            List<String> hgvsCodes = new LinkedList<>();
-            hgvsCodes.add(chromosome + ":g." + start + reference + ">" + alternate);
-            impl.getHgvs().put("genomic", hgvsCodes);
-        }
+        this.resetHGVS();
 
 //        this.annotation = new VariantAnnotation(this.chromosome, this.start, this.end, this.reference, this.alternate);
         sourceEntries = new HashMap<>();
@@ -99,6 +124,17 @@ public class Variant {
         }
     }
 
+    private void resetLength() {
+        setLength(Math.max(getReference().length(), getAlternate().length()));
+    }
+
+    public void resetHGVS() {
+        if (this.getType() == VariantType.SNV || this.getType() == VariantType.SNP) { // Generate HGVS code only for SNVs
+            List<String> hgvsCodes = new LinkedList<>();
+            hgvsCodes.add(getChromosome() + ":g." + getStart() + getReference() + ">" + getAlternate());
+            impl.getHgvs().put("genomic", hgvsCodes);
+        }
+    }
     public VariantAvro getImpl() {
         return impl;
     }
@@ -141,10 +177,6 @@ public class Variant {
         resetLength();
     }
 
-    protected void resetLength() {
-        setLength(Math.max(getReference().length(), getAlternate().length()));
-    }
-
     @Deprecated
     public String getId() {
         if (impl.getIds() == null) {
@@ -180,6 +212,14 @@ public class Variant {
 
     public String getAlternate() {
         return impl.getAlternate();
+    }
+
+    public String getStrand() {
+        return impl.getStrand();
+    }
+
+    public void setStrand(String strand) {
+        impl.setStrand(strand);
     }
 
     public List<String> getIds() {
@@ -243,7 +283,7 @@ public class Variant {
         impl.setStudies(new ArrayList<>(studies.size()));
         for (VariantSourceEntry study : studies) {
             impl.getStudies().add(study.getImpl());
-            sourceEntries.put(composeId(study.getStudyId(), study.getFileId()), study);
+            sourceEntries.put(composeId(study.getStudyId()), study);
         }
     }
 
@@ -252,7 +292,7 @@ public class Variant {
             if (sourceEntries == null) {
                 sourceEntries = new HashMap<>();
                 for (org.opencb.biodata.models.variant.avro.VariantSourceEntry sourceEntry : impl.getStudies()) {
-                    sourceEntries.put(composeId(sourceEntry.getStudyId(), sourceEntry.getFiles().isEmpty()? null : sourceEntry.getFiles().get(0).getFileId()), new VariantSourceEntry(sourceEntry));
+                    sourceEntries.put(composeId(sourceEntry.getStudyId()), new VariantSourceEntry(sourceEntry));
                 }
             }
             return Collections.unmodifiableMap(sourceEntries);
@@ -267,7 +307,7 @@ public class Variant {
     @Deprecated
     public VariantSourceEntry getSourceEntry(String fileId, String studyId) {
         if (impl.getStudies() != null) {
-            return getSourceEntries().get(composeId(studyId, fileId));
+            return getSourceEntries().get(composeId(studyId));
         }
         return null;
     }
@@ -284,7 +324,7 @@ public class Variant {
         if (sourceEntries == null) {
             sourceEntries = new HashMap<>();
         }
-        this.sourceEntries.put(composeId(sourceEntry.getStudyId(), sourceEntry.getFileId()), sourceEntry);
+        this.sourceEntries.put(composeId(sourceEntry.getStudyId()), sourceEntry);
         impl.getStudies().add(sourceEntry.getImpl());
     }
 //
@@ -344,17 +384,13 @@ public class Variant {
     }
 
 
+    @Override
     public String toString() {
-        return "Variant{" +
-                "chromosome='" + getChromosome() + '\'' +
-                ", start=" + getStart() +
-                ", end=" + getEnd() +
-                ", reference='" + getReference() + '\'' +
-                ", alternate='" + getAlternate() + '\'' +
-                ", ids=" + getIds() +
-                ", type=" + getType() +
-                ", hgvs=" + getHgvs() +
-                '}';
+        if(this.getReference() == null) {
+            return getChromosome() + ":" + getStart() + ":" + getAlternate();
+        }else {
+            return getChromosome() + ":" + getStart() + ":" + getReference() + ":" + getAlternate();
+        }
     }
 
     public String toJson() {
@@ -407,7 +443,23 @@ public class Variant {
 
     @Deprecated
     private String composeId(String studyId, String fileId) {
-        return studyId + (fileId == null ? "" : "_" + fileId);
+        return studyId;
+    }
+
+    public static Variant parseVariant(String variantString) {
+        return new Variant(variantString);
+    }
+
+    public static List<Variant> parseVariants(String variantsString) {
+        List<Variant> variants = null;
+        if(variantsString != null && !variantsString.isEmpty()) {
+            String[] variantItems = variantsString.split(",");
+            variants = new ArrayList<>(variantItems.length);
+            for(String variantString: variantItems) {
+                variants.add(new Variant(variantString));
+            }
+        }
+        return variants;
     }
 
 }
